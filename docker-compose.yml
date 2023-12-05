@@ -1,0 +1,40 @@
+services:
+  httpapi:
+    build:
+      context: .
+      dockerfile: ./WebApplication11Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION}
+    ports:
+      - "${BC_HTTP_ODATA4_SYSTEM_API_HTTP_PORT}:8080"
+      - "${BC_HTTP_ODATA4_SYSTEM_API_HTTPS_PORT}:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${DOTNET_ENVIRONMENT:-production}
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTPS_PORTS=8081
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${HTTPS_CERT_PASS}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/usr/local/share/ca-certificates/${HTTPS_CERT_NAME}
+      - DetailedErrors=true
+      - ApplicationName=${APPLICATION_NAME}
+      - AppUrl=${APP_URL}
+    networks:
+      - dot8test_net
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --fail https://${APP_URL}:8081/healthz || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - ./src:/code/src
+      - ${HTTPS_CERT_PATH}:/usr/local/share/ca-certificates/:ro
+    entrypoint: [ "/bin/sh","-c" ]
+    command:
+      - |
+        update-ca-certificates
+        dotnet WebApplication11Api.dll
+networks:
+  dot8test_net:
+    driver: bridge
+
+  
